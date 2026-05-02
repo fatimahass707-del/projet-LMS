@@ -6,7 +6,7 @@ CREATE DATABASE IF NOT EXISTS lms_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unico
 USE lms_db;
 
 -- ------------------------------------------------
--- TABLE : users
+-- TABLE : users (Fatima)
 -- ------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS chapters (
 );
 
 -- ------------------------------------------------
--- TABLE : resources (Fatima)
+-- TABLE : resources (Ikram)
 -- ------------------------------------------------
 CREATE TABLE IF NOT EXISTS resources (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -106,9 +106,25 @@ CREATE TABLE IF NOT EXISTS submissions (
   student_id INT NOT NULL,
   quiz_id INT NOT NULL,
   score INT DEFAULT 0,
+  total INT DEFAULT 0,
   submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
+);
+
+-- ------------------------------------------------
+-- TABLE : progress (Ikram)
+-- ------------------------------------------------
+CREATE TABLE IF NOT EXISTS progress (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  student_id INT NOT NULL,
+  course_id INT NOT NULL,
+  resource_id INT NOT NULL,
+  viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_progress (student_id, resource_id),
+  FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+  FOREIGN KEY (resource_id) REFERENCES resources(id) ON DELETE CASCADE
 );
 
 -- ------------------------------------------------
@@ -126,13 +142,18 @@ CREATE TABLE IF NOT EXISTS announcements (
 );
 
 -- ------------------------------------------------
--- DONNÉES DE TEST (seeds)
+-- DONNÉES DE TEST
 -- ------------------------------------------------
 INSERT INTO users (name, email, password, role) VALUES
 ('Admin LMS', 'admin@lms.com', '$2b$10$examplehashedpassword1', 'admin'),
 ('Prof Fatima', 'fatima@lms.com', '$2b$10$examplehashedpassword2', 'teacher'),
-('Etudiant Ikram', 'ikram@lms.com', '$2b$10$examplehashedpassword3', 'student');
+('Etudiante Ikram', 'ikram@lms.com', '$2b$10$examplehashedpassword3', 'student');
 
 INSERT INTO courses (title, description, teacher_id) VALUES
 ('Introduction au JavaScript', 'Apprenez les bases de JS', 2),
 ('HTML & CSS Avancé', 'Maîtrisez le développement web', 2);
+
+INSERT INTO chapters (course_id, title, order_num) VALUES
+(1, 'Variables et Types', 1),
+(1, 'Fonctions', 2),
+(2, 'Flexbox', 1);

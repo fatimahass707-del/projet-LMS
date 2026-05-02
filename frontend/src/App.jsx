@@ -11,6 +11,7 @@ import CourseCreator from './pages/CourseCreator';
 import StudentDashboard from './pages/StudentDashboard';
 import CourseView from './pages/CourseView';
 import QuizPage from './pages/QuizPage';
+import Results from './pages/Results';
 
 function App() {
   return (
@@ -47,6 +48,11 @@ function App() {
         <Route path="/quiz/:id" element={
           <ProtectedRoute allowedRoles={['student']}>
             <QuizPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/results/:quizId" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <Results />
           </ProtectedRoute>
         } />
 
