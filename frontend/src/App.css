@@ -1,0 +1,129 @@
+/* Layout principal */
+.page-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  padding: 30px 0;
+}
+
+/* Cards cours */
+.course-card {
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+  background: #fff;
+  transition: box-shadow 0.2s;
+}
+
+.course-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.course-card h5 {
+  color: #0d6efd;
+  font-weight: 600;
+}
+
+/* Dashboard stats */
+.stat-card {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.stat-card .stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #0d6efd;
+}
+
+.stat-card .stat-label {
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+/* Barre de progression */
+.progress-section {
+  margin-bottom: 15px;
+}
+
+.progress-section .progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-bottom: 5px;
+}
+
+/* Ressources */
+.resource-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  background: #fff;
+}
+
+.resource-item:hover {
+  background: #f8f9fa;
+}
+
+.resource-badge {
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-pdf    { background: #ffe0e0; color: #c0392b; }
+.badge-video  { background: #e0f0ff; color: #1565c0; }
+.badge-link   { background: #e0ffe0; color: #1b5e20; }
+.badge-doc    { background: #fff3e0; color: #e65100; }
+
+/* Quiz */
+.quiz-option {
+  display: block;
+  padding: 12px 16px;
+  border: 1.5px solid #dee2e6;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.quiz-option:hover {
+  border-color: #0d6efd;
+  background: #f0f5ff;
+}
+
+.quiz-option.selected {
+  border-color: #0d6efd;
+  background: #e7efff;
+}
+
+/* Formulaires */
+.form-card {
+  max-width: 480px;
+  margin: 60px auto;
+  padding: 40px;
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.form-card h2 {
+  text-align: center;
+  margin-bottom: 28px;
+  color: #0d6efd;
+}
