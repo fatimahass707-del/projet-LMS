@@ -17,7 +17,7 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const [result] = await db.query(
-      'INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)',
+      'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
       [name, email, hashedPassword, role || 'student']
     );
     
@@ -39,14 +39,14 @@ router.post('/login', async (req, res) => {
     }
     
     const user = users[0];
-    const isMatch = await bcrypt.compare(password, user.password_hash);
+    const isMatch = await bcrypt.compare(password, user.password);
     
     if (!isMatch) {
       return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
     }
     
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, name: user.name, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -54,7 +54,9 @@ router.post('/login', async (req, res) => {
     res.json({
       message: 'Connexion réussie',
       token,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role }
+      role: user.role,
+      name: user.name,
+      id: user.id
     });
   } catch (error) {
     console.error(error);
