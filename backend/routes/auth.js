@@ -9,6 +9,9 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
     
+    const validRoles = ['admin', 'teacher', 'student'];
+    const userRole = validRoles.includes(role) ? role : 'student';
+    
     const [existing] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
     if (existing.length > 0) {
       return res.status(400).json({ message: 'Email déjà utilisé' });
@@ -17,7 +20,7 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const [result] = await db.query(
-      'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
+      'INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)',
       [name, email, hashedPassword, role || 'student']
     );
     
@@ -39,7 +42,7 @@ router.post('/login', async (req, res) => {
     }
     
     const user = users[0];
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password_hash);
     
     if (!isMatch) {
       return res.status(401).json({ message: 'Email ou mot de passe incorrect' });

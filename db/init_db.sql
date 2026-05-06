@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   email VARCHAR(150) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
   role ENUM('admin', 'teacher', 'student') NOT NULL DEFAULT 'student',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -142,12 +142,12 @@ CREATE TABLE IF NOT EXISTS announcements (
 );
 
 -- ------------------------------------------------
--- DONNÉES DE TEST
+-- DONNÉES DE TEST (Mot de passe pour TOUS : "password123")
 -- ------------------------------------------------
-INSERT INTO users (name, email, password, role) VALUES
-('Admin LMS', 'admin@lms.com', '$2b$10$examplehashedpassword1', 'admin'),
-('Prof Fatima', 'fatima@lms.com', '$2b$10$examplehashedpassword2', 'teacher'),
-('Etudiante Ikram', 'ikram@lms.com', '$2b$10$examplehashedpassword3', 'student');
+INSERT INTO users (name, email, password_hash, role) VALUES
+('Admin LMS', 'admin@lms.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'admin'),
+('Prof Fatima', 'fatima@lms.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'teacher'),
+('Etudiante Ikram', 'ikram@lms.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'student');
 
 INSERT INTO courses (title, description, teacher_id) VALUES
 ('Introduction au JavaScript', 'Apprenez les bases de JS', 2),
