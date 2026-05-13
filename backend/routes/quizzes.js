@@ -2,300 +2,273 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const verifyToken = require('../middleware/auth');
-const checkRole = require('../middleware/roleChecker');
+const requireRole = require('../middleware/roleChecker');
 
-// ========== QUIZZES ==========
-
-// POST : Créer un quiz (enseignant)
-router.post('/', verifyToken, checkRole(['teacher', 'admin']), async (req, res) => {
+// Créer un quiz (teacher)
+router.post('/', verifyToken, requireRole(['teacher']), async (req, res) => {
   try {
-    const { course_id, title } = req.body;
-    const teacherId = req.user.id;
-
-    // Vérifier que l'enseignant est l'auteur du cours
-    const [course] = await db.query('SELECT teacher_id FROM courses WHERE id = ?', [course_id]);
-    if (course.length === 0) {
-      return res.status(404).json({ message: 'Cours non trouvé' });
-    }
-    if (course[0].teacher_id !== teacherId) {
-      return res.status(403).json({ message: "Accès refusé : vous n'êtes pas l'auteur de ce cours" });
-    }
-
-    const sql = 'INSERT INTO quizzes (course_id, title) VALUES (?, ?)';
-    const [result] = await db.query(sql, [course_id, title]);
-
-    res.status(201).json({ message: 'Quiz créé avec succès', quizId: result.insertId });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-});
-
-// GET : Liste des quiz d'un cours
-router.get('/course/:courseId', async (req, res) => {
-  try {
-    const courseId = req.params.courseId;
-    const sql = 'SELECT * FROM quizzes WHERE course_id = ? ORDER BY created_at DESC';
-    const [quizzes] = await db.query(sql, [courseId]);
-    res.json(quizzes);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-});
-
-// GET : Voir un quiz avec questions et options
-router.get('/:id', async (req, res) => {
-  try {
-    const quizId = req.params.id;
+    const { course_id, title, questions } = req.body;
     
-    const [quizzes] = await db.query('SELECT * FROM quizzes WHERE id = ?', [quizId]);
-    if (quizzes.length === 0) {
-      return res.status(404).json({ message: 'Quiz non trouvé' });
+    if (!course_id || !title || !Array.isArray(questions)) {
+      return res.status(400).json({ message: 'course_id, title et questions sont requis.' });
     }
 
-    const [questions] = await db.query(
-      'SELECT * FROM questions WHERE quiz_id = ?',
-      [quizId]
-    );
+    // Vérifier que le teacher possède le cours
+    const [courses] = await db.query('SELECT id FROM courses WHERE id = ? AND teacher_id = ?', 
+      [course_id, req.user.id]);
+    if (courses.length === 0) {
+      return res.status(403).json({ message: 'Cours non trouvé ou accès interdit.' });
+    }
 
-    const quizWithQuestions = { ...quizzes[0], questions: [] };
+    // Transaction pour créer quiz + questions + options
+    const connection = await db.getConnection();
+    try {
+      await connection.beginTransaction();
 
-    for (const question of questions) {
-      const [options] = await db.query(
-        'SELECT id, option_text FROM options WHERE question_id = ?',
-        [question.id]
+      const [quizResult] = await connection.query(
+        'INSERT INTO quizzes (course_id, title) VALUES (?, ?)',
+        [course_id, title]
       );
-      quizWithQuestions.questions.push({
-        ...question,
-        options
-      });
-    }
+      const quizId = quizResult.insertId;
 
-    res.json(quizWithQuestions);
+      for (const q of questions) {
+        if (!q.question_text || !Array.isArray(q.options)) continue;
+        
+        const [qResult] = await connection.query(
+          'INSERT INTO questions (quiz_id, question_text) VALUES (?, ?)',
+          [quizId, q.question_text]
+        );
+        const questionId = qResult.insertId;
+
+        for (const opt of q.options) {
+          await connection.query(
+            'INSERT INTO options (question_id, option_text, is_correct) VALUES (?, ?, ?)',
+            [questionId, opt.text, opt.is_correct || false]
+          );
+        }
+      }
+
+      await connection.commit();
+      res.status(201).json({ message: 'Quiz créé avec succès.', quiz_id: quizId });
+    } catch (err) {
+      await connection.rollback();
+      throw err;
+    } finally {
+      connection.release();
+    }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    console.error('Erreur création quiz:', error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 });
 
-// PUT : Modifier un quiz
-router.put('/:id', verifyToken, checkRole(['teacher', 'admin']), async (req, res) => {
+// Récupérer un quiz (étudiant inscrit ou teacher)
+router.get('/:quizId', verifyToken, async (req, res) => {
   try {
-    const { title } = req.body;
-    const quizId = req.params.id;
-    const teacherId = req.user.id;
+    const { quizId } = req.params;
 
-    const [quiz] = await db.query(
-      'SELECT c.teacher_id FROM quizzes q JOIN courses c ON q.course_id = c.id WHERE q.id = ?',
-      [quizId]
-    );
+    // Récupérer le quiz avec son cours
+    const [quizzes] = await db.query(`
+      SELECT q.*, c.teacher_id FROM quizzes q
+      JOIN courses c ON q.course_id = c.id
+      WHERE q.id = ?
+    `, [quizId]);
 
-    if (quiz.length === 0) {
-      return res.status(404).json({ message: 'Quiz non trouvé' });
+    if (quizzes.length === 0) {
+      return res.status(404).json({ message: 'Quiz non trouvé.' });
     }
-    if (quiz[0].teacher_id !== teacherId) {
-      return res.status(403).json({ message: "Accès refusé" });
+    const quiz = quizzes[0];
+
+    // Vérifier les permissions
+    const isTeacher = quiz.teacher_id === req.user.id || req.user.role === 'admin';
+    const isStudent = req.user.role === 'student';
+
+    if (isStudent) {
+      // Vérifier l'inscription au cours
+      const [enrolled] = await db.query(
+        'SELECT id FROM enrollments WHERE student_id = ? AND course_id = ?',
+        [req.user.id, quiz.course_id]
+      );
+      if (enrolled.length === 0 && !isTeacher) {
+        return res.status(403).json({ message: 'Vous devez être inscrit au cours.' });
+      }
     }
 
-    await db.query('UPDATE quizzes SET title = ? WHERE id = ?', [title, quizId]);
-    res.json({ message: 'Quiz modifié avec succès' });
+    // Récupérer questions et options (sans révéler is_correct aux étudiants)
+    const [questions] = await db.query(`
+      SELECT 
+        q.id as question_id, q.question_text,
+        o.id as option_id, o.option_text${isStudent ? '' : ', o.is_correct'}
+      FROM questions q
+      LEFT JOIN options o ON q.id = o.question_id
+      WHERE q.quiz_id = ?
+      ORDER BY q.id, o.id
+    `, [quizId]);
+
+    // Structurer les données
+    const structuredQuestions = [];
+    for (const q of questions) {
+      const existing = structuredQuestions.find(qq => qq.id === q.question_id);
+      if (existing) {
+        existing.options.push({
+          id: q.option_id,
+          text: q.option_text,
+          ...(isTeacher && { is_correct: q.is_correct })
+        });
+      } else {
+        structuredQuestions.push({
+          id: q.question_id,
+          question_text: q.question_text,
+          options: [{
+            id: q.option_id,
+            text: q.option_text,
+            ...(isTeacher && { is_correct: q.is_correct })
+          }]
+        });
+      }
+    }
+
+    res.json({
+      id: quiz.id,
+      title: quiz.title,
+      course_id: quiz.course_id,
+      questions: structuredQuestions
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    console.error('Erreur récupération quiz:', error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 });
 
-// DELETE : Supprimer un quiz
-router.delete('/:id', verifyToken, checkRole(['teacher', 'admin']), async (req, res) => {
+// Soumettre un quiz (student)
+router.post('/:quizId/submit', verifyToken, async (req, res) => {
   try {
-    const quizId = req.params.id;
-    const teacherId = req.user.id;
+    if (req.user.role !== 'student') {
+      return res.status(403).json({ message: 'Seuls les étudiants peuvent soumettre un quiz.' });
+    }
 
-    const [quiz] = await db.query(
-      'SELECT c.teacher_id FROM quizzes q JOIN courses c ON q.course_id = c.id WHERE q.id = ?',
-      [quizId]
+    const { quizId } = req.params;
+    const { answers } = req.body; // { question_id: option_id }
+
+    if (!answers || typeof answers !== 'object') {
+      return res.status(400).json({ message: 'Les réponses sont requises.' });
+    }
+
+    // Vérifier l'inscription et récupérer les bonnes réponses
+    const [quizData] = await db.query(`
+      SELECT q.course_id, c.teacher_id FROM quizzes q
+      JOIN courses c ON q.course_id = c.id
+      WHERE q.id = ?
+    `, [quizId]);
+
+    if (quizData.length === 0) {
+      return res.status(404).json({ message: 'Quiz non trouvé.' });
+    }
+
+    const [enrolled] = await db.query(
+      'SELECT id FROM enrollments WHERE student_id = ? AND course_id = ?',
+      [req.user.id, quizData[0].course_id]
     );
-
-    if (quiz.length === 0) {
-      return res.status(404).json({ message: 'Quiz non trouvé' });
-    }
-    if (quiz[0].teacher_id !== teacherId) {
-      return res.status(403).json({ message: "Accès refusé" });
+    if (enrolled.length === 0) {
+      return res.status(403).json({ message: 'Inscription requise.' });
     }
 
-    await db.query('DELETE FROM quizzes WHERE id = ?', [quizId]);
-    res.json({ message: 'Quiz supprimé avec succès' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-});
+    // Récupérer les bonnes réponses
+    const [correctAnswers] = await db.query(`
+      SELECT q.id as question_id, o.id as correct_option_id
+      FROM questions q
+      JOIN options o ON q.id = o.question_id
+      WHERE q.quiz_id = ? AND o.is_correct = TRUE
+    `, [quizId]);
 
-// ========== QUESTIONS ==========
-
-// POST : Ajouter une question à un quiz
-router.post('/:quizId/questions', verifyToken, checkRole(['teacher', 'admin']), async (req, res) => {
-  try {
-    const { question_text } = req.body;
-    const quizId = req.params.quizId;
-    const teacherId = req.user.id;
-
-    const [quiz] = await db.query(
-      'SELECT c.teacher_id FROM quizzes q JOIN courses c ON q.course_id = c.id WHERE q.id = ?',
-      [quizId]
-    );
-
-    if (quiz.length === 0) {
-      return res.status(404).json({ message: 'Quiz non trouvé' });
-    }
-    if (quiz[0].teacher_id !== teacherId) {
-      return res.status(403).json({ message: "Accès refusé" });
-    }
-
-    const sql = 'INSERT INTO questions (quiz_id, question_text) VALUES (?, ?)';
-    const [result] = await db.query(sql, [quizId, question_text]);
-
-    res.status(201).json({ message: 'Question ajoutée', questionId: result.insertId });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-});
-
-// POST : Ajouter des options à une question
-router.post('/questions/:questionId/options', verifyToken, checkRole(['teacher', 'admin']), async (req, res) => {
-  try {
-    const { option_text, is_correct } = req.body;
-    const questionId = req.params.questionId;
-    const teacherId = req.user.id;
-
-    const [question] = await db.query(
-      'SELECT c.teacher_id FROM questions q JOIN quizzes quiz ON q.quiz_id = quiz.id JOIN courses c ON quiz.course_id = c.id WHERE q.id = ?',
-      [questionId]
-    );
-
-    if (question.length === 0) {
-      return res.status(404).json({ message: 'Question non trouvée' });
-    }
-    if (question[0].teacher_id !== teacherId) {
-      return res.status(403).json({ message: "Accès refusé" });
-    }
-
-    const sql = 'INSERT INTO options (question_id, option_text, is_correct) VALUES (?, ?, ?)';
-    const [result] = await db.query(sql, [questionId, option_text, is_correct || false]);
-
-    res.status(201).json({ message: 'Option ajoutée', optionId: result.insertId });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-});
-
-// ========== SOUMISSIONS ==========
-
-// POST : Soumettre un quiz (étudiant)
-router.post('/:quizId/submit', verifyToken, checkRole(['student']), async (req, res) => {
-  try {
-    const quizId = req.params.quizId;
-    const studentId = req.user.id;
-    const { answers } = req.body; // { questionId: optionId }
-
-    // Récupérer le quiz et vérifier si l'étudiant est inscrit au cours
-    const [quiz] = await db.query('SELECT course_id FROM quizzes WHERE id = ?', [quizId]);
-    if (quiz.length === 0) {
-      return res.status(404).json({ message: 'Quiz non trouvé' });
-    }
-
-    const [enrollment] = await db.query(
-      'SELECT * FROM enrollments WHERE student_id = ? AND course_id = ?',
-      [studentId, quiz[0].course_id]
-    );
-    if (enrollment.length === 0) {
-      return res.status(403).json({ message: "Vous n'êtes pas inscrit à ce cours" });
+    const correctMap = {};
+    for (const ca of correctAnswers) {
+      correctMap[ca.question_id] = ca.correct_option_id;
     }
 
     // Calculer le score
     let score = 0;
-    let total = 0;
-
-    for (const [questionId, optionId] of Object.entries(answers)) {
-      const [options] = await db.query(
-        'SELECT is_correct FROM options WHERE id = ? AND question_id = ?',
-        [optionId, questionId]
-      );
-      total++;
-      if (options.length > 0 && options[0].is_correct) {
+    const total = Object.keys(correctMap).length;
+    for (const [qId, userAnswer] of Object.entries(answers)) {
+      if (correctMap[qId] && correctMap[qId] === userAnswer) {
         score++;
       }
     }
 
-    // Enregistrer la soumission
-    const sql = 'INSERT INTO submissions (student_id, quiz_id, score, total) VALUES (?, ?, ?, ?)';
-    await db.query(sql, [studentId, quizId, score, total]);
+    // Enregistrer la submission
+    await db.query(
+      'INSERT INTO submissions (student_id, quiz_id, score, total) VALUES (?, ?, ?, ?)',
+      [req.user.id, quizId, score, total]
+    );
 
-    res.json({ 
-      message: 'Quiz soumis avec succès', 
-      score, 
+    res.json({
+      message: 'Quiz soumis avec succès.',
+      score,
       total,
       percentage: total > 0 ? Math.round((score / total) * 100) : 0
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    console.error('Erreur soumission quiz:', error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 });
 
-// GET : Voir les résultats d'un quiz (enseignant)
-router.get('/:quizId/results', verifyToken, checkRole(['teacher', 'admin']), async (req, res) => {
+// Récupérer les résultats d'un quiz (teacher ou student pour ses propres résultats)
+router.get('/:quizId/results', verifyToken, async (req, res) => {
   try {
-    const quizId = req.params.quizId;
-    const teacherId = req.user.id;
+    const { quizId } = req.params;
 
-    const [quiz] = await db.query(
-      'SELECT c.teacher_id FROM quizzes q JOIN courses c ON q.course_id = c.id WHERE q.id = ?',
-      [quizId]
-    );
-
-    if (quiz.length === 0) {
-      return res.status(404).json({ message: 'Quiz non trouvé' });
-    }
-    if (quiz[0].teacher_id !== teacherId) {
-      return res.status(403).json({ message: "Accès refusé" });
+    // Vérifier les permissions
+    const [quizInfo] = await db.query('SELECT course_id, teacher_id FROM quizzes JOIN courses ON quizzes.course_id = courses.id WHERE quizzes.id = ?', [quizId]);
+    if (quizInfo.length === 0) {
+      return res.status(404).json({ message: 'Quiz non trouvé.' });
     }
 
-    const sql = `
-      SELECT s.*, u.name as student_name, u.email
-      FROM submissions s
-      INNER JOIN users u ON s.student_id = u.id
-      WHERE s.quiz_id = ?
-      ORDER BY s.submitted_at DESC
-    `;
-    const [submissions] = await db.query(sql, [quizId]);
-    res.json(submissions);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-});
+    const isTeacher = quizInfo[0].teacher_id === req.user.id || req.user.role === 'admin';
+    
+    if (req.user.role === 'student' && !isTeacher) {
+      // Student: voir seulement ses propres résultats
+      const [myResults] = await db.query(`
+        SELECT score, total, submitted_at,
+          ROUND((score / total) * 100) as percentage
+        FROM submissions
+        WHERE quiz_id = ? AND student_id = ?
+        ORDER BY submitted_at DESC
+        LIMIT 1
+      `, [quizId, req.user.id]);
+      
+      return res.json(myResults[0] || { message: 'Aucune soumission trouvée.' });
+    }
 
-// GET : Mes résultats de quiz (étudiant)
-router.get('/my-results', verifyToken, checkRole(['student']), async (req, res) => {
-  try {
-    const studentId = req.user.id;
-    const sql = `
-      SELECT s.*, q.title as quiz_title, c.title as course_title
-      FROM submissions s
-      INNER JOIN quizzes q ON s.quiz_id = q.id
-      INNER JOIN courses c ON q.course_id = c.id
-      WHERE s.student_id = ?
-      ORDER BY s.submitted_at DESC
-    `;
-    const [results] = await db.query(sql, [studentId]);
-    res.json(results);
+    if (isTeacher) {
+      // Teacher: voir les statistiques du quiz
+      const [stats] = await db.query(`
+        SELECT 
+          COUNT(*) as total_submissions,
+          AVG(score) as avg_score,
+          MAX(score) as best_score,
+          MIN(score) as lowest_score
+        FROM submissions
+        WHERE quiz_id = ?
+      `, [quizId]);
+
+      const [submissions] = await db.query(`
+        SELECT 
+          s.*, u.name as student_name, u.email,
+          ROUND((s.score / s.total) * 100) as percentage
+        FROM submissions s
+        JOIN users u ON s.student_id = u.id
+        WHERE s.quiz_id = ?
+        ORDER BY s.submitted_at DESC
+      `, [quizId]);
+
+      res.json({ stats: stats[0], submissions });
+    } else {
+      return res.status(403).json({ message: 'Accès interdit.' });
+    }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    console.error('Erreur résultats quiz:', error);
+    res.status(500).json({ message: 'Erreur serveur.' });
   }
 });
 
