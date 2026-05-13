@@ -1,96 +1,76 @@
- const express = require("express");
+const express = require('express');
 const router = express.Router();
+const db = require('../db');
+const verifyToken = require('../middleware/auth');
 
-// مؤقتاً نخزنو التسجيلات هنا باش يخدم مباشرة
-let enrollments = [];
+// POST : Enroll student in course
+router.post('/', verifyToken, async (req, res) => {
+  try {
+    const { course_id } = req.body;
+    const student_id = req.user.id;
 
-// Test route
-router.get("/", (req, res) => {
-  res.json({
-    message: "Enrollments route is working",
-    data: enrollments,
-  });
-});
+    const [existing] = await db.query(
+      'SELECT * FROM enrollments WHERE student_id = ? AND course_id = ?',
+      [student_id, course_id]
+    );
 
-// Student enrolls in a course
-router.post("/", (req, res) => {
-  const { student_id, course_id } = req.body;
+    if (existing.length > 0) {
+      return res.status(400).json({ message: 'Déjà inscrit dans ce cours' });
+    }
 
-  if (!student_id || !course_id) {
-    return res.status(400).json({
-      message: "student_id and course_id are required",
+    const sql = `
+      INSERT INTO enrollments (student_id, course_id)
+      VALUES (?, ?)
+    `;
+
+    const [result] = await db.query(sql, [student_id, course_id]);
+
+    res.status(201).json({
+      message: 'Inscription réussie',
+      enrollmentId: result.insertId
     });
+
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur' });
   }
-
-  const alreadyEnrolled = enrollments.find(
-    (e) => e.student_id == student_id && e.course_id == course_id
-  );
-
-  if (alreadyEnrolled) {
-    return res.status(409).json({
-      message: "Student already enrolled in this course",
-    });
-  }
-
-  const newEnrollment = {
-    id: enrollments.length + 1,
-    student_id,
-    course_id,
-    created_at: new Date(),
-  };
-
-  enrollments.push(newEnrollment);
-
-  res.status(201).json({
-    message: "Enrollment created successfully",
-    enrollment: newEnrollment,
-  });
 });
 
-// Get student enrollments
-router.get("/student/:student_id", (req, res) => {
-  const { student_id } = req.params;
+// GET : My enrollments
+router.get('/mine', verifyToken, async (req, res) => {
+  try {
 
-  const studentEnrollments = enrollments.filter(
-    (e) => e.student_id == student_id
-  );
+    const sql = `
+      SELECT courses.*
+      FROM enrollments
+      JOIN courses ON enrollments.course_id = courses.id
+      WHERE enrollments.student_id = ?
+    `;
 
-  res.json({
-    student_id,
-    enrollments: studentEnrollments,
-  });
-});
+    const [courses] = await db.query(sql, [req.user.id]);
 
-// Check enrollment
-router.get("/check/:student_id/:course_id", (req, res) => {
-  const { student_id, course_id } = req.params;
+    res.json(courses);
 
-  const enrolled = enrollments.some(
-    (e) => e.student_id == student_id && e.course_id == course_id
-  );
-
-  res.json({ enrolled });
-});
-
-// Delete enrollment
-router.delete("/:student_id/:course_id", (req, res) => {
-  const { student_id, course_id } = req.params;
-
-  const before = enrollments.length;
-
-  enrollments = enrollments.filter(
-    (e) => !(e.student_id == student_id && e.course_id == course_id)
-  );
-
-  if (before === enrollments.length) {
-    return res.status(404).json({
-      message: "Enrollment not found",
-    });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur' });
   }
+});
 
-  res.json({
-    message: "Enrollment deleted successfully",
-  });
+// DELETE : Cancel enrollment
+router.delete('/:courseId', verifyToken, async (req, res) => {
+  try {
+
+    const courseId = req.params.courseId;
+
+    await db.query(
+      'DELETE FROM enrollments WHERE student_id = ? AND course_id = ?',
+      [req.user.id, courseId]
+    );
+
+    res.json({ message: 'Inscription supprimée' });
+
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
 
 module.exports = router;
