@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { register } from '../services/api';
+import { ShieldCheck, User, Mail, Lock, UserPlus, Loader2 } from 'lucide-react';
 
 function Register() {
   const navigate = useNavigate();
@@ -22,48 +23,43 @@ function Register() {
     setError('');
     setLoading(true);
 
-    try {
-      const result = await register(formData);
+    const result = await register(formData);
 
-      if (result.userId) {
-        // Inscription réussie → rediriger vers login
-        navigate('/login');
-      } else {
-        setError(result.message || "Erreur lors de l'inscription");
-      }
-    } catch (err) {
-      setError('Erreur de connexion. Vérifiez votre réseau.');
-    } finally {
+    if (result.error) {
+      setError(result.error);
       setLoading(false);
+    } else {
+      navigate('/login', { state: { message: 'Compte créé avec succès ! Connectez-vous maintenant.' } });
     }
   };
 
   return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ background: '#f4f6f9' }}>
-      <div className="form-card shadow-sm">
-
-        {/* Logo / Titre */}
+    <div className="auth-wrapper">
+      <div className="form-card animate-fade-up">
+        
         <div className="text-center mb-4">
-          <div className="mb-2" style={{ fontSize: '2rem' }}>🎓</div>
-          <h2 className="fw-bold" style={{ color: '#0d6efd' }}>LMS Platform</h2>
-          <p className="text-muted" style={{ fontSize: '0.9rem' }}>Créez votre compte</p>
+          <div className="auth-logo">
+            <ShieldCheck size={60} />
+          </div>
+          <h2 className="auth-title">ProLMS</h2>
+          <p className="auth-subtitle">Créez votre profil professionnel</p>
         </div>
 
-        {/* Message d'erreur */}
         {error && (
-          <div className="alert alert-danger py-2" style={{ fontSize: '0.9rem' }}>
+          <div className="alert alert-danger bg-opacity-10 border-danger text-danger mb-4 text-center py-2">
             {error}
           </div>
         )}
 
-        {/* Formulaire */}
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
-            <label className="form-label fw-medium">Nom complet</label>
+            <label className="text-secondary small fw-bold mb-2 d-flex align-items-center gap-2">
+              <User size={14} /> NOM COMPLET
+            </label>
             <input
               type="text"
               name="name"
-              className="form-control"
+              className="form-control-premium"
               placeholder="Votre nom"
               value={formData.name}
               onChange={handleChange}
@@ -72,11 +68,13 @@ function Register() {
           </div>
 
           <div className="mb-3">
-            <label className="form-label fw-medium">Email</label>
+            <label className="text-secondary small fw-bold mb-2 d-flex align-items-center gap-2">
+              <Mail size={14} /> ADRESSE EMAIL
+            </label>
             <input
               type="email"
               name="email"
-              className="form-control"
+              className="form-control-premium"
               placeholder="votre@email.com"
               value={formData.email}
               onChange={handleChange}
@@ -85,11 +83,13 @@ function Register() {
           </div>
 
           <div className="mb-3">
-            <label className="form-label fw-medium">Mot de passe</label>
+            <label className="text-secondary small fw-bold mb-2 d-flex align-items-center gap-2">
+              <Lock size={14} /> MOT DE PASSE
+            </label>
             <input
               type="password"
               name="password"
-              className="form-control"
+              className="form-control-premium"
               placeholder="••••••••"
               value={formData.password}
               onChange={handleChange}
@@ -97,42 +97,49 @@ function Register() {
             />
           </div>
 
-          <div className="mb-4">
-            <label className="form-label fw-medium">Je suis</label>
+          <div className="mb-5">
+            <label className="text-secondary small fw-bold mb-2 d-flex align-items-center gap-2">
+              <UserPlus size={14} /> JE SUIS UN(E)
+            </label>
             <select
               name="role"
-              className="form-select"
+              className="form-control-premium"
               value={formData.role}
               onChange={handleChange}
             >
               <option value="student">Étudiant</option>
               <option value="teacher">Enseignant</option>
+              <option value="admin">Administrateur</option>
             </select>
           </div>
 
           <button
             type="submit"
-            className="btn btn-primary w-100"
+            className="btn-premium w-100 py-3 d-flex align-items-center justify-content-center gap-2"
             disabled={loading}
           >
             {loading ? (
               <>
-                <span className="spinner-border spinner-border-sm me-2" />
-                Inscription...
+                <Loader2 className="animate-spin" size={20} />
+                Création...
               </>
             ) : (
-              "S'inscrire"
+              <>
+                <UserPlus size={20} />
+                S'inscrire
+              </>
             )}
           </button>
         </form>
 
-        {/* Lien login */}
-        <p className="text-center mt-3 mb-0" style={{ fontSize: '0.9rem' }}>
-          Déjà un compte ?{' '}
-          <Link to="/login" className="text-primary fw-medium">
-            Se connecter
-          </Link>
-        </p>
+        <div className="text-center mt-5">
+          <p className="text-secondary small mb-0">
+            Déjà inscrit ?{' '}
+            <Link to="/login" className="text-gold fw-bold text-decoration-none">
+              Se connecter
+            </Link>
+          </p>
+        </div>
 
       </div>
     </div>

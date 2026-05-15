@@ -94,27 +94,30 @@ function CourseCreator() {
         <div className="container" style={{ maxWidth: '700px' }}>
 
           {/* En-tête */}
-          <div className="d-flex align-items-center gap-3 mb-4">
+          <div className="d-flex align-items-center gap-3 mb-5 animate-fade-in">
             <button
-              className="btn btn-outline-secondary btn-sm"
+              className="btn-outline-premium btn-sm"
+              style={{ padding: '0.4rem 0.8rem' }}
               onClick={() => step === 2 ? setStep(1) : navigate('/teacher')}
             >
               ← Retour
             </button>
-            <h4 className="fw-bold mb-0">
-              {step === 1 ? 'Créer un cours' : 'Ajouter des chapitres'}
+            <h4 className="fw-bold mb-0" style={{ fontSize: '1.8rem' }}>
+              {step === 1 ? 'Créer un nouveau cours ✨' : 'Ajouter des chapitres 📚'}
             </h4>
           </div>
 
           {/* Indicateur d'étapes */}
-          <div className="d-flex align-items-center gap-2 mb-4">
-            <span className={`badge ${step >= 1 ? 'bg-primary' : 'bg-secondary'}`}>
-              1. Informations du cours
-            </span>
-            <span style={{ color: '#ccc' }}>→</span>
-            <span className={`badge ${step >= 2 ? 'bg-primary' : 'bg-secondary'}`}>
-              2. Chapitres
-            </span>
+          <div className="d-flex align-items-center gap-3 mb-5 animate-fade-in">
+            <div className={`d-flex align-items-center gap-2 ${step >= 1 ? 'text-primary fw-bold' : 'text-muted'}`}>
+              <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: step >= 1 ? 'var(--primary-color)' : '#e2e8f0', color: step >= 1 ? 'white' : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>1</div>
+              <span>Informations du cours</span>
+            </div>
+            <div style={{ flex: 1, height: '2px', background: step >= 2 ? 'var(--primary-color)' : '#e2e8f0' }}></div>
+            <div className={`d-flex align-items-center gap-2 ${step >= 2 ? 'text-primary fw-bold' : 'text-muted'}`}>
+              <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: step >= 2 ? 'var(--primary-color)' : '#e2e8f0', color: step >= 2 ? 'white' : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>2</div>
+              <span>Chapitres</span>
+            </div>
           </div>
 
           {/* Message d'erreur */}
@@ -124,10 +127,10 @@ function CourseCreator() {
 
           {/* ---- ÉTAPE 1 : Cours ---- */}
           {step === 1 && (
-            <div className="course-card">
+            <div className="form-card mx-0 w-100 max-w-100 animate-slide-up" style={{ padding: '2.5rem' }}>
               <form onSubmit={handleCourseSubmit}>
-                <div className="mb-3">
-                  <label className="form-label fw-medium">Titre du cours *</label>
+                <div className="mb-4">
+                  <label className="form-label">Titre du cours *</label>
                   <input
                     type="text"
                     name="title"
@@ -139,19 +142,19 @@ function CourseCreator() {
                   />
                 </div>
 
-                <div className="mb-4">
-                  <label className="form-label fw-medium">Description</label>
+                <div className="mb-5">
+                  <label className="form-label">Description</label>
                   <textarea
                     name="description"
                     className="form-control"
-                    rows="4"
-                    placeholder="Décrivez le contenu de votre cours..."
+                    rows="5"
+                    placeholder="Décrivez le contenu de votre cours en quelques phrases..."
                     value={courseData.description}
                     onChange={handleCourseChange}
                   />
                 </div>
 
-                <button type="submit" className="btn btn-primary w-100">
+                <button type="submit" className="btn-premium w-100">
                   Suivant → Ajouter des chapitres
                 </button>
               </form>
@@ -160,37 +163,46 @@ function CourseCreator() {
 
           {/* ---- ÉTAPE 2 : Chapitres ---- */}
           {step === 2 && (
-            <form onSubmit={handleFinalSubmit}>
+            <form onSubmit={handleFinalSubmit} className="animate-slide-up">
 
-              {chapters.map((chapter, index) => (
-                <div className="course-card mb-3" key={index}>
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <span className="fw-medium">Chapitre {index + 1}</span>
-                    {chapters.length > 1 && (
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-danger"
-                        onClick={() => removeChapter(index)}
-                      >
-                        ✕
-                      </button>
-                    )}
+              <div className="list-group-premium mb-4">
+                {chapters.map((chapter, index) => (
+                  <div className="list-item-premium flex-column align-items-stretch" key={index}>
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <div className="d-flex align-items-center gap-2">
+                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--primary-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                          {index + 1}
+                        </div>
+                        <span className="fw-bold" style={{ color: 'var(--text-primary)' }}>Chapitre {index + 1}</span>
+                      </div>
+                      {chapters.length > 1 && (
+                        <button
+                          type="button"
+                          className="btn btn-sm text-danger"
+                          onClick={() => removeChapter(index)}
+                          style={{ background: 'var(--danger-bg)', border: 'none', borderRadius: '50%', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      name="title"
+                      className="form-control"
+                      placeholder="Titre du chapitre"
+                      value={chapter.title}
+                      onChange={(e) => handleChapterChange(index, e)}
+                    />
                   </div>
-                  <input
-                    type="text"
-                    name="title"
-                    className="form-control"
-                    placeholder="Titre du chapitre"
-                    value={chapter.title}
-                    onChange={(e) => handleChapterChange(index, e)}
-                  />
-                </div>
-              ))}
+                ))}
+              </div>
 
               {/* Ajouter un chapitre */}
               <button
                 type="button"
-                className="btn btn-outline-primary w-100 mb-3"
+                className="btn-outline-premium w-100 mb-4"
+                style={{ borderStyle: 'dashed' }}
                 onClick={addChapter}
               >
                 + Ajouter un chapitre
@@ -199,7 +211,8 @@ function CourseCreator() {
               {/* Soumettre */}
               <button
                 type="submit"
-                className="btn btn-success w-100"
+                className="btn-premium w-100"
+                style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
                 disabled={loading}
               >
                 {loading ? (
@@ -208,7 +221,7 @@ function CourseCreator() {
                     Création en cours...
                   </>
                 ) : (
-                  '✓ Créer le cours'
+                  '✓ Terminer et créer le cours'
                 )}
               </button>
             </form>

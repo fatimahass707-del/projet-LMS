@@ -18,19 +18,15 @@ function FileUploader({ chapterId, onUploadSuccess }) {
 
     setUploading(true);
     try {
-      // Pour les uploads de fichiers réels, utiliser FormData
-      // Ici on suppose que l'URL est déjà hébergée ou on utilise un service cloud
       await uploadResource({
         chapter_id: chapterId,
         ...formData
       });
-      
-      // Reset form
       setFormData({ title: '', type: 'document', url: '' });
       if (onUploadSuccess) onUploadSuccess();
       alert('✅ Ressource ajoutée !');
     } catch (err) {
-      alert('❌ Échec de l\'upload.');
+      alert("❌ Échec de l'upload.");
       console.error(err);
     } finally {
       setUploading(false);
@@ -42,7 +38,7 @@ function FileUploader({ chapterId, onUploadSuccess }) {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Pour upload de fichier physique (optionnel - nécessite backend multipart)
+  // Upload fichier physique
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -50,13 +46,13 @@ function FileUploader({ chapterId, onUploadSuccess }) {
     const uploadFormData = new FormData();
     uploadFormData.append('chapter_id', chapterId);
     uploadFormData.append('title', file.name);
-    uploadFormData.append('type', file.type.split('/')[1] || 'document');
+    uploadFormData.append('type', file.type.includes('pdf') ? 'pdf' : 'document');
     uploadFormData.append('file', file);
 
     setUploading(true);
     try {
-      // Note: adapter l'API pour accepter FormData avec multer
-      const res = await fetch('http://localhost:5000/api/resources/upload', {
+      // ✅ CORRECTION : bonne route /api/resources
+      const res = await fetch('http://127.0.0.1:5000/api/resources', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -67,7 +63,7 @@ function FileUploader({ chapterId, onUploadSuccess }) {
       if (onUploadSuccess) onUploadSuccess();
       alert('✅ Fichier uploadé !');
     } catch (err) {
-      alert('❌ Échec de l\'upload du fichier.');
+      alert("❌ Échec de l'upload du fichier.");
       console.error(err);
     } finally {
       setUploading(false);
@@ -77,7 +73,7 @@ function FileUploader({ chapterId, onUploadSuccess }) {
   return (
     <form onSubmit={handleSubmit} className="mb-3 p-3 border rounded">
       <h6 className="mb-3">➕ Ajouter une ressource</h6>
-      
+
       <div className="mb-2">
         <label className="form-label small">Titre</label>
         <input
@@ -129,8 +125,8 @@ function FileUploader({ chapterId, onUploadSuccess }) {
         />
       </div>
 
-      <button 
-        type="submit" 
+      <button
+        type="submit"
         className="btn btn-primary btn-sm"
         disabled={uploading}
       >

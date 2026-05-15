@@ -1,12 +1,16 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { login } from '../services/api';
+import { ShieldCheck, Mail, Lock, LogIn, Loader2 } from 'lucide-react';
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const successMessage = location.state?.message;
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -17,58 +21,60 @@ function Login() {
     setError('');
     setLoading(true);
 
-    try {
-      const result = await login(formData);
+    const result = await login(formData);
 
-      if (result.token) {
-        // Stocker les infos dans localStorage
-        localStorage.setItem('token', result.token);
-        localStorage.setItem('role', result.role);
-        localStorage.setItem('name', result.name);
-        localStorage.setItem('id', result.id);
-
-        // Rediriger selon le rôle
-        if (result.role === 'teacher' || result.role === 'admin') {
-          navigate('/teacher');
-        } else {
-          navigate('/student');
-        }
-      } else {
-        setError(result.message || 'Email ou mot de passe incorrect');
-      }
-    } catch (err) {
-      setError('Erreur de connexion. Vérifiez votre réseau.');
-    } finally {
+    if (result.error) {
+      setError(result.error);
       setLoading(false);
+    } else {
+      localStorage.setItem('token', result.token);
+      localStorage.setItem('role', result.role);
+      localStorage.setItem('name', result.name);
+      localStorage.setItem('id', result.id);
+
+      if (result.role === 'admin') {
+        navigate('/admin');
+      } else if (result.role === 'teacher') {
+        navigate('/teacher');
+      } else {
+        navigate('/student');
+      }
     }
   };
 
   return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ background: '#f4f6f9' }}>
-      <div className="form-card shadow-sm">
+    <div className="auth-wrapper">
+      <div className="form-card animate-fade-up">
         
-        {/* Logo / Titre */}
-        <div className="text-center mb-4">
-          <div className="mb-2" style={{ fontSize: '2rem' }}>🎓</div>
-          <h2 className="fw-bold" style={{ color: '#0d6efd' }}>LMS Platform</h2>
-          <p className="text-muted" style={{ fontSize: '0.9rem' }}>Connectez-vous à votre espace</p>
+        <div className="text-center mb-5">
+          <div className="auth-logo">
+            <ShieldCheck size={60} />
+          </div>
+          <h2 className="auth-title">ProLMS</h2>
+          <p className="auth-subtitle">Plateforme d'apprentissage professionnelle</p>
         </div>
 
-        {/* Message d'erreur */}
+        {successMessage && (
+          <div className="alert alert-success bg-opacity-10 border-success text-success mb-4 text-center py-2" style={{ fontSize: '0.9rem' }}>
+            {successMessage}
+          </div>
+        )}
+
         {error && (
-          <div className="alert alert-danger py-2" style={{ fontSize: '0.9rem' }}>
+          <div className="alert alert-danger bg-opacity-10 border-danger text-danger mb-4 text-center py-2" style={{ fontSize: '0.9rem' }}>
             {error}
           </div>
         )}
 
-        {/* Formulaire */}
         <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label className="form-label fw-medium">Email</label>
+          <div className="mb-4">
+            <label className="text-secondary small fw-bold mb-2 d-flex align-items-center gap-2">
+              <Mail size={14} /> ADRESSE EMAIL
+            </label>
             <input
               type="email"
               name="email"
-              className="form-control"
+              className="form-control-premium"
               placeholder="votre@email.com"
               value={formData.email}
               onChange={handleChange}
@@ -76,12 +82,14 @@ function Login() {
             />
           </div>
 
-          <div className="mb-4">
-            <label className="form-label fw-medium">Mot de passe</label>
+          <div className="mb-5">
+            <label className="text-secondary small fw-bold mb-2 d-flex align-items-center gap-2">
+              <Lock size={14} /> MOT DE PASSE
+            </label>
             <input
               type="password"
               name="password"
-              className="form-control"
+              className="form-control-premium"
               placeholder="••••••••"
               value={formData.password}
               onChange={handleChange}
@@ -91,27 +99,31 @@ function Login() {
 
           <button
             type="submit"
-            className="btn btn-primary w-100"
+            className="btn-premium w-100 py-3 d-flex align-items-center justify-content-center gap-2"
             disabled={loading}
           >
             {loading ? (
               <>
-                <span className="spinner-border spinner-border-sm me-2" />
-                Connexion...
+                <Loader2 className="animate-spin" size={20} />
+                Vérification...
               </>
             ) : (
-              'Se connecter'
+              <>
+                <LogIn size={20} />
+                Se connecter
+              </>
             )}
           </button>
         </form>
 
-        {/* Lien inscription */}
-        <p className="text-center mt-3 mb-0" style={{ fontSize: '0.9rem' }}>
-          Pas encore de compte ?{' '}
-          <Link to="/register" className="text-primary fw-medium">
-            S'inscrire
-          </Link>
-        </p>
+        <div className="text-center mt-5">
+          <p className="text-secondary small mb-0">
+            Nouveau sur la plateforme ?{' '}
+            <Link to="/register" className="text-gold fw-bold text-decoration-none">
+              Créer un compte
+            </Link>
+          </p>
+        </div>
 
       </div>
     </div>

@@ -1,18 +1,31 @@
 const express = require('express');
 const router = express.Router();
+const Joi = require('joi');
 const db = require('../db');
 const verifyToken = require('../middleware/auth');
 const checkRole = require('../middleware/roleChecker');
 
+// Schémas de validation
+const courseSchema = Joi.object({
+  title: Joi.string().min(3).max(200).required(),
+  description: Joi.string().allow('', null)
+});
+
 // POST : Créer un cours
 router.post('/', verifyToken, checkRole(['teacher', 'admin']), async (req, res) => {
   try {
-    const { title, description } = req.body;
+    const { error, value } = courseSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+
+    const { title, description } = value;
     const teacherId = req.user.id;
     const sql = 'INSERT INTO courses (title, description, teacher_id) VALUES (?, ?, ?)';
     const [result] = await db.query(sql, [title, description, teacherId]);
     res.status(201).json({ message: 'Cours créé avec succès', courseId: result.insertId });
   } catch (error) {
+    console.error('Erreur Create Course:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
@@ -29,6 +42,7 @@ router.get('/', async (req, res) => {
     const [courses] = await db.query(sql);
     res.json(courses);
   } catch (error) {
+    console.error('Erreur List Courses:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
@@ -47,6 +61,7 @@ router.get('/mine', verifyToken, checkRole(['teacher', 'admin']), async (req, re
     );
     res.json(courses);
   } catch (error) {
+    console.error('Erreur My Courses:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
@@ -61,6 +76,7 @@ router.get('/:id', async (req, res) => {
     }
     res.json(courses[0]);
   } catch (error) {
+    console.error('Erreur Get Course:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
@@ -68,16 +84,23 @@ router.get('/:id', async (req, res) => {
 // PUT : Modifier un cours
 router.put('/:id', verifyToken, checkRole(['teacher', 'admin']), async (req, res) => {
   try {
-    const { title, description } = req.body;
-    const courseId = req.params.id;
-    const teacherId = req.user.id;
+    const { error, value } = courseSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
 
-    const checkSql = 'SELECT teacher_id FROM courses WHERE id = ?';
-    const [course] = await db.query(checkSql, [courseId]);
+    const { title, description } = value;
+    const courseId = req.params.id;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    const [course] = await db.query('SELECT teacher_id FROM courses WHERE id = ?', [courseId]);
     if (course.length === 0) {
       return res.status(404).json({ message: 'Cours non trouvé' });
     }
-    if (course[0].teacher_id !== teacherId) {
+
+    // Autoriser si l'utilisateur est le créateur OU un admin
+    if (course[0].teacher_id !== userId && userRole !== 'admin') {
       return res.status(403).json({ message: "Accès refusé : vous n'êtes pas l'auteur de ce cours" });
     }
 
@@ -85,6 +108,7 @@ router.put('/:id', verifyToken, checkRole(['teacher', 'admin']), async (req, res
     await db.query(updateSql, [title, description, courseId]);
     res.json({ message: 'Cours modifié avec succès' });
   } catch (error) {
+    console.error('Erreur Update Course:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
@@ -93,22 +117,62 @@ router.put('/:id', verifyToken, checkRole(['teacher', 'admin']), async (req, res
 router.delete('/:id', verifyToken, checkRole(['teacher', 'admin']), async (req, res) => {
   try {
     const courseId = req.params.id;
-    const teacherId = req.user.id;
+    const userId = req.user.id;
+    const userRole = req.user.role;
 
-    const checkSql = 'SELECT teacher_id FROM courses WHERE id = ?';
-    const [course] = await db.query(checkSql, [courseId]);
+    const [course] = await db.query('SELECT teacher_id FROM courses WHERE id = ?', [courseId]);
     if (course.length === 0) {
       return res.status(404).json({ message: 'Cours non trouvé' });
     }
-    if (course[0].teacher_id !== teacherId) {
+
+    // Autoriser si l'utilisateur est le créateur OU un admin
+    if (course[0].teacher_id !== userId && userRole !== 'admin') {
       return res.status(403).json({ message: "Accès refusé : vous n'êtes pas l'auteur de ce cours" });
     }
 
     await db.query('DELETE FROM courses WHERE id = ?', [courseId]);
     res.json({ message: 'Cours supprimé avec succès' });
   } catch (error) {
+    console.error('Erreur Delete Course:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 
-module.exports = router;
+// GET : Liste des étudiants d'un cours avec leur progression (enseignant)
+router.get('/:id/students', verifyToken, checkRole(['teacher', 'admin']), async (req, res) => {
+  try {
+    const courseId = req.params.id;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    // Vérifier propriétaire
+    const [course] = await db.query('SELECT teacher_id FROM courses WHERE id = ?', [courseId]);
+    if (course.length === 0) return res.status(404).json({ message: 'Cours non trouvé' });
+    if (course[0].teacher_id !== userId && userRole !== 'admin') {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+
+    // Récupérer les étudiants, leur progression et leur score moyen aux quiz
+    const [students] = await db.query(`
+      SELECT 
+        u.id, u.name, u.email,
+        (SELECT COUNT(*) FROM progress p WHERE p.student_id = u.id AND p.course_id = ?) as viewed_resources,
+        (SELECT COUNT(*) FROM resources r JOIN chapters ch ON r.chapter_id = ch.id WHERE ch.course_id = ?) as total_resources,
+        (SELECT AVG(IF(total > 0, (score / total) * 100, 0)) FROM submissions s JOIN quizzes q ON s.quiz_id = q.id WHERE s.student_id = u.id AND q.course_id = ?) as avg_quiz_score
+      FROM enrollments e
+      JOIN users u ON e.student_id = u.id
+      WHERE e.course_id = ?
+    `, [courseId, courseId, courseId, courseId]);
+
+    res.json(students.map(s => ({
+      ...s,
+      progress: s.total_resources > 0 ? Math.round((s.viewed_resources / s.total_resources) * 100) : 0,
+      avg_quiz_score: s.avg_quiz_score ? Math.round(s.avg_quiz_score) : null
+    })));
+  } catch (error) {
+    console.error('Erreur list students:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+module.exports = router;

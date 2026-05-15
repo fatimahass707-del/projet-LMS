@@ -82,7 +82,7 @@ router.get('/:courseId', verifyToken, async (req, res) => {
     // Détails par chapitre (optionnel)
     const [chapters] = await db.query(`
       SELECT 
-        ch.id as chapter_id, ch.title, ch.order_num,
+        ch.id as chapter_id, ch.title,
         COUNT(r.id) as resources_count,
         COUNT(p.resource_id) as viewed_count
       FROM chapters ch
@@ -90,7 +90,7 @@ router.get('/:courseId', verifyToken, async (req, res) => {
       LEFT JOIN progress p ON p.resource_id = r.id AND p.student_id = ?
       WHERE ch.course_id = ?
       GROUP BY ch.id
-      ORDER BY ch.order_num
+      ORDER BY ch.id ASC
     `, [studentId || req.user.id, courseId]);
 
     res.json({

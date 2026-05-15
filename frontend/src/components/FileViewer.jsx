@@ -26,9 +26,10 @@ function FileViewer({ resource, onView }) {
 
   return (
     <button 
-      className="btn btn-outline-primary btn-sm"
+      className="btn-view-resource"
       onClick={handleClick}
       title={`Ouvrir: ${resource.title}`}
+      style={{ border: 'none', cursor: 'pointer' }}
     >
       {getIcon(resource.type)} Ouvrir
     </button>
