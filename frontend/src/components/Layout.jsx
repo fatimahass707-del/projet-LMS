@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Home, BookOpen, Settings, Bell, Search, LogOut, Sun, Moon, PanelLeftClose, PanelLeftOpen, Menu, X, ShieldCheck, GraduationCap, PlusCircle, Compass, Megaphone } from 'lucide-react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link, useSearchParams } from 'react-router-dom';
 import { getNotifications } from '../services/api';
 import './Layout.css';
 
@@ -38,6 +38,16 @@ export default function Layout({ children, userRole = 'student' }) {
   }, [location.pathname]); // Rafraîchir lors de la navigation
 
   const toggleTheme = () => setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    if (value) {
+      searchParams.set('search', value);
+    } else {
+      searchParams.delete('search');
+    }
+    setSearchParams(searchParams, { replace: true });
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');

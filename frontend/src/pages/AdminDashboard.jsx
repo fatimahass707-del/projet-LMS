@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 import { 
   getUsers, deleteUser, createUser, updateAdminUser, resetUserPassword,
   getAllCourses, deleteCourse, updateAdminCourse, createCourse,
@@ -21,6 +22,25 @@ function AdminDashboard() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [adminUser, setAdminUser] = useState(null);
+
+  const [searchParams] = useSearchParams();
+  const searchTerm = (searchParams.get('search') || '').toLowerCase();
+
+  const filteredUsers = users.filter(u => 
+    u.name?.toLowerCase().includes(searchTerm) || 
+    u.email?.toLowerCase().includes(searchTerm) || 
+    u.role?.toLowerCase().includes(searchTerm)
+  );
+
+  const filteredCourses = courses.filter(c => 
+    c.title?.toLowerCase().includes(searchTerm) || 
+    c.teacher_name?.toLowerCase().includes(searchTerm)
+  );
+
+  const filteredEnrollments = enrollments.filter(e => 
+    e.student_name?.toLowerCase().includes(searchTerm) || 
+    e.course_title?.toLowerCase().includes(searchTerm)
+  );
 
   // Modals state
   const [showUserModal, setShowUserModal] = useState(false);
@@ -212,7 +232,10 @@ function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {users.map(u => (
+                {filteredUsers.length === 0 ? (
+                  <tr><td colSpan="5" className="text-center py-4 text-muted">Aucun utilisateur trouvé.</td></tr>
+                ) : (
+                  filteredUsers.map(u => (
                   <tr key={u.id}>
                     <td><div className="fw-bold">{u.name}</div></td>
                     <td className="text-secondary">{u.email}</td>
@@ -239,7 +262,7 @@ function AdminDashboard() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>
@@ -266,7 +289,10 @@ function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {courses.map(c => (
+                {filteredCourses.length === 0 ? (
+                  <tr><td colSpan="4" className="text-center py-4 text-muted">Aucune formation trouvée.</td></tr>
+                ) : (
+                  filteredCourses.map(c => (
                   <tr key={c.id}>
                     <td><div className="fw-bold">{c.title}</div></td>
                     <td className="text-secondary">{c.teacher_name}</td>
@@ -289,7 +315,7 @@ function AdminDashboard() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>
@@ -310,7 +336,10 @@ function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {enrollments.map(e => (
+                {filteredEnrollments.length === 0 ? (
+                  <tr><td colSpan="3" className="text-center py-4 text-muted">Aucune inscription trouvée.</td></tr>
+                ) : (
+                  filteredEnrollments.map(e => (
                   <tr key={e.id}>
                     <td className="text-secondary">{e.student_name}</td>
                     <td><div className="fw-bold">{e.course_title}</div></td>
@@ -320,7 +349,7 @@ function AdminDashboard() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>

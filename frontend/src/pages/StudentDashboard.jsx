@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getMyEnrollments, getMySubmissions, getAnnouncements, getCourses, enrollCourse } from '../services/api';
 import CourseCard from '../components/CourseCard';
 import { 
@@ -19,6 +19,31 @@ function StudentDashboard() {
   const [error, setError] = useState(null);
   const [enrollSuccess, setEnrollSuccess] = useState(null);
   const [user, setUser] = useState(null);
+
+  const [searchParams] = useSearchParams();
+  const searchTerm = (searchParams.get('search') || '').toLowerCase();
+
+  const filteredEnrolled = enrolledCourses.filter(c => 
+    c.title?.toLowerCase().includes(searchTerm) || 
+    c.instructor_name?.toLowerCase().includes(searchTerm)
+  );
+  
+  const filteredCatalog = allCourses.filter(c => 
+    c.title?.toLowerCase().includes(searchTerm) || 
+    c.teacher_name?.toLowerCase().includes(searchTerm) || 
+    c.category?.toLowerCase().includes(searchTerm)
+  );
+
+  const filteredSubmissions = submissions.filter(s => 
+    s.course_title?.toLowerCase().includes(searchTerm) || 
+    s.quiz_title?.toLowerCase().includes(searchTerm)
+  );
+
+  const filteredAnnouncements = announcements.filter(a => 
+    a.title?.toLowerCase().includes(searchTerm) || 
+    a.course_title?.toLowerCase().includes(searchTerm) || 
+    a.content?.toLowerCase().includes(searchTerm)
+  );
 
   useEffect(() => { 
     const storedUser = JSON.parse(localStorage.getItem('user'));
@@ -161,16 +186,16 @@ function StudentDashboard() {
 
           {/* Quick Resume */}
           <h4 className="fw-bold mb-4">Reprendre l'apprentissage</h4>
-          {enrolledCourses.length === 0 ? (
+          {filteredEnrolled.length === 0 ? (
             <div className="glass-card p-5 text-center">
               <Compass size={48} className="text-primary mb-3 mx-auto" />
-              <h5 className="fw-bold mb-2">Vous n'êtes inscrit à aucune formation</h5>
-              <p className="text-muted mb-4">Explorez notre catalogue pour commencer à apprendre dès aujourd'hui.</p>
+              <h5 className="fw-bold mb-2">Aucun cours à afficher</h5>
+              <p className="text-muted mb-4">Vous n'êtes inscrit à aucune formation ou votre recherche n'a pas abouti.</p>
               <button className="btn-premium px-4 py-2" onClick={() => setActiveTab('catalog')}>Explorer le catalogue</button>
             </div>
           ) : (
             <div className="row g-4">
-              {enrolledCourses.slice(0, 3).map(c => (
+              {filteredEnrolled.slice(0, 3).map(c => (
                 <div className="col-md-6 col-lg-4" key={c.id}>
                   <CourseCard 
                     id={c.id}
@@ -198,10 +223,10 @@ function StudentDashboard() {
           {enrolling && <div className="alert alert-info mb-4 d-flex align-items-center gap-2"><Loader2 className="animate-spin" size={18} /> Inscription en cours...</div>}
 
           <div className="row g-4">
-            {allCourses.length === 0 ? (
-              <div className="col-12"><div className="glass-card p-5 text-center text-muted">Aucune formation disponible dans le catalogue pour le moment.</div></div>
+            {filteredCatalog.length === 0 ? (
+              <div className="col-12"><div className="glass-card p-5 text-center text-muted">Aucune formation ne correspond à votre recherche.</div></div>
             ) : (
-              allCourses.map(c => {
+              filteredCatalog.map(c => {
                 const isEnrolled = enrolledCourses.some(e => e.id === c.id || e.course_id === c.id);
                 return (
                   <div className="col-md-6 col-lg-4" key={c.id}>
@@ -227,11 +252,11 @@ function StudentDashboard() {
       {activeTab === 'courses' && (
         <div>
           <h4 className="fw-bold mb-4">Mes Formations</h4>
-          {enrolledCourses.length === 0 ? (
-            <div className="glass-card p-5 text-center text-muted">Vous n'êtes inscrit à aucun cours. Allez dans l'onglet Catalogue pour en ajouter !</div>
+          {filteredEnrolled.length === 0 ? (
+            <div className="glass-card p-5 text-center text-muted">Aucun cours trouvé. Allez dans l'onglet Catalogue pour en ajouter !</div>
           ) : (
             <div className="row g-4">
-              {enrolledCourses.map(c => (
+              {filteredEnrolled.map(c => (
                 <div className="col-md-6 col-lg-4" key={c.id}>
                   <CourseCard 
                     id={c.id}
@@ -263,10 +288,10 @@ function StudentDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {submissions.length === 0 ? (
-                  <tr><td colSpan="5" className="text-center py-4 text-muted">Aucune évaluation passée.</td></tr>
+                {filteredSubmissions.length === 0 ? (
+                  <tr><td colSpan="5" className="text-center py-4 text-muted">Aucune évaluation trouvée.</td></tr>
                 ) : (
-                  submissions.map(s => (
+                  filteredSubmissions.map(s => (
                     <tr key={s.id}>
                       <td className="fw-bold">{s.course_title}</td>
                       <td>{s.quiz_title}</td>
@@ -290,10 +315,10 @@ function StudentDashboard() {
         <div>
           <h4 className="fw-bold mb-4">Actualités & Annonces</h4>
           <div className="row g-4">
-            {announcements.length === 0 ? (
-              <div className="col-12"><p className="text-muted">Aucune annonce pour le moment.</p></div>
+            {filteredAnnouncements.length === 0 ? (
+              <div className="col-12"><p className="text-muted">Aucune annonce trouvée pour cette recherche.</p></div>
             ) : (
-              announcements.map(ann => (
+              filteredAnnouncements.map(ann => (
                 <div key={ann.id} className="col-12">
                   <div className="glass-card d-flex gap-4">
                     <div className="text-warning bg-warning bg-opacity-10 p-3 rounded" style={{ height: 'fit-content' }}>

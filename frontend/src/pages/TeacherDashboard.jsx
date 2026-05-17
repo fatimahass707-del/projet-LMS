@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getMyCourses, deleteCourse } from '../services/api';
 import { 
   BookOpen, Users, Plus, 
@@ -13,6 +13,14 @@ function TeacherDashboard() {
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  const [searchParams] = useSearchParams();
+  const searchTerm = (searchParams.get('search') || '').toLowerCase();
+
+  const filteredCourses = courses.filter(c => 
+    c.title?.toLowerCase().includes(searchTerm) || 
+    c.description?.toLowerCase().includes(searchTerm)
+  );
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
@@ -136,7 +144,10 @@ function TeacherDashboard() {
           </div>
 
           <div className="row g-4">
-            {courses.slice(0, 3).map(course => (
+            {filteredCourses.length === 0 ? (
+              <div className="col-12"><p className="text-muted text-center p-4 glass-card">Aucun cours ne correspond à votre recherche.</p></div>
+            ) : (
+              filteredCourses.slice(0, 3).map(course => (
               <div className="col-md-4" key={course.id}>
                 <div className="glass-card p-4 d-flex flex-column h-100" style={{ cursor: 'pointer' }} onClick={() => navigate(`/teacher/course/${course.id}`)}>
                   <div className="d-flex justify-content-between mb-3">
@@ -153,7 +164,7 @@ function TeacherDashboard() {
                   <button className="btn-premium w-100 py-2">Administrer</button>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
       )}
@@ -162,7 +173,10 @@ function TeacherDashboard() {
         <div>
           <h4 className="fw-bold mb-4">Répertoire Complet</h4>
           <div className="row g-4">
-            {courses.map(course => (
+            {filteredCourses.length === 0 ? (
+              <div className="col-12"><p className="text-muted text-center p-4 glass-card">Aucun cours trouvé.</p></div>
+            ) : (
+              filteredCourses.map(course => (
               <div className="col-md-6 col-lg-4" key={course.id}>
                 <div className="glass-card p-4 d-flex flex-column h-100">
                   <div className="d-flex justify-content-between align-items-center mb-3">
@@ -182,7 +196,7 @@ function TeacherDashboard() {
                   </div>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
       )}

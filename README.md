@@ -1,4 +1,4 @@
-# 🎓 LMS Premium - Plateforme d'Apprentissage Moderne
+# 🎓 LMS - Plateforme d'Apprentissage Moderne
 
 ![LMS Banner](./logo_lms.png)
 
