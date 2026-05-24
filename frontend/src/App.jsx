@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
+import Layout from './components/Layout';
+import './App.css';
 
 // Pages
 import Login from './pages/Login';
@@ -24,40 +26,54 @@ function App() {
         {/* Route Profil (Tous) */}
         <Route path="/profile" element={
           <ProtectedRoute allowedRoles={['student', 'teacher', 'admin']}>
-            <Profile />
+            <Layout userRole={localStorage.getItem('role') || 'student'}>
+              <Profile />
+            </Layout>
           </ProtectedRoute>
         } />
 
         {/* Route Admin */}
         <Route path="/admin" element={
           <ProtectedRoute allowedRoles={['admin']}>
-            <AdminDashboard />
+            <Layout userRole="admin">
+              <AdminDashboard />
+            </Layout>
           </ProtectedRoute>
         } />
 
         {/* Routes enseignant */}
         <Route path="/teacher" element={
           <ProtectedRoute allowedRoles={['teacher', 'admin']}>
-            <TeacherDashboard />
+            <Layout userRole="teacher">
+              <TeacherDashboard />
+            </Layout>
           </ProtectedRoute>
         } />
         <Route path="/teacher/create-course" element={
           <ProtectedRoute allowedRoles={['teacher', 'admin']}>
-            <CourseCreator />
+            <Layout userRole="teacher">
+              <CourseCreator />
+            </Layout>
           </ProtectedRoute>
         } />
         <Route path="/teacher/course/:id" element={
           <ProtectedRoute allowedRoles={['teacher', 'admin']}>
-            <CourseManager />
+            <Layout userRole="teacher">
+              <CourseManager />
+            </Layout>
           </ProtectedRoute>
         } />
 
         {/* Routes étudiant */}
         <Route path="/student" element={
           <ProtectedRoute allowedRoles={['student', 'admin']}>
-            <StudentDashboard />
+            <Layout userRole="student">
+              <StudentDashboard />
+            </Layout>
           </ProtectedRoute>
         } />
+        
+        {/* Sans Distraction Layouts (No standard Layout wrapper) */}
         <Route path="/course/:id" element={
           <ProtectedRoute allowedRoles={['student', 'admin']}>
             <CourseView />

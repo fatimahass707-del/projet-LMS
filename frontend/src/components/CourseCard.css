@@ -1,0 +1,107 @@
+.course-card {
+  background: var(--surface-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.course-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.card-image-wrapper {
+  position: relative;
+  height: 160px;
+  background-color: var(--surface-light);
+}
+
+.card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.category-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: var(--surface-color);
+  backdrop-filter: blur(4px);
+  color: var(--text-primary);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.card-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.card-instructor {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: auto; /* Pushes the progress section to the bottom */
+  padding-bottom: 1.25rem;
+}
+
+.progress-section {
+  margin-bottom: 1.25rem;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.progress-text {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.progress-percent {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.progress-track {
+  height: 6px;
+  background-color: var(--surface-light);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--secondary-color); /* Ambre chaud */
+  border-radius: 4px;
+  transition: width 0.5s ease-in-out;
+}
+
+.btn-full-width {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

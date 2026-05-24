@@ -40,6 +40,12 @@ async function runFix() {
     if (sCols.length > 0 && !sCols.some(c => c.Field === 'total')) {
       await dbFix.query(`ALTER TABLE submissions ADD COLUMN total INT DEFAULT 0 AFTER score`).catch(() => {});
     }
+
+    // Fix courses
+    const [cCols] = await dbFix.query(`DESCRIBE courses`).catch(() => [[]]);
+    if (cCols.length > 0 && !cCols.some(c => c.Field === 'is_published')) {
+      await dbFix.query(`ALTER TABLE courses ADD COLUMN is_published BOOLEAN DEFAULT TRUE AFTER teacher_id`).catch(() => {});
+    }
     
     // Fix announcements
     const [aCols] = await dbFix.query(`DESCRIBE announcements`).catch(() => [[]]);
@@ -87,6 +93,7 @@ app.use('/api/quizzes', require('./routes/quizzes'));
 app.use('/api/announcements', require('./routes/announcements'));
 app.use('/api/resources', require('./routes/resources'));
 app.use('/api/progress', require('./routes/progress'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

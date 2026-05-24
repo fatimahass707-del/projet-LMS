@@ -88,13 +88,13 @@ function QuizPage() {
               <CheckCircle2 size={48} className="text-success" />
             </div>
           </div>
-          <h2 className="text-gold fw-bold mb-3">Quiz déjà complété</h2>
+          <h2 className="text-primary fw-bold mb-3">Quiz déjà complété</h2>
           <p className="text-secondary mb-4 fs-5">
             Vous avez déjà validé vos réponses pour ce quiz professionnel.
             <br />
             <span className="text-muted small">Score précédent :</span>
             <br />
-            <strong className="display-6 text-gold">{quiz.previousScore?.score} / {quiz.previousScore?.total}</strong>
+            <strong className="display-6 text-primary">{quiz.previousScore?.score} / {quiz.previousScore?.total}</strong>
           </p>
           <div className="d-flex gap-3 justify-content-center">
             <button className="btn-outline-premium" onClick={() => navigate(-1)}>
@@ -115,8 +115,8 @@ function QuizPage() {
         <div className="container py-5" style={{ maxWidth: '850px' }}>
           <div className="d-flex align-items-center justify-content-between mb-5 animate-fade-up">
             <div className="d-flex align-items-center gap-3">
-              <ClipboardList className="text-gold" size={32} />
-              <h2 className="text-gold fw-bold mb-0" style={{ fontSize: '2.5rem' }}>{quiz.title}</h2>
+              <ClipboardList className="text-primary" size={32} />
+              <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2.5rem' }}>{quiz.title}</h2>
             </div>
             <button className="btn-outline-premium d-flex align-items-center gap-2" onClick={() => navigate(-1)}>
               <ArrowLeft size={18} /> Abandonner
@@ -125,12 +125,12 @@ function QuizPage() {
 
           <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="animate-fade-up">
             {quiz.questions?.map((question, index) => (
-              <div key={question.id} className="glass-card mb-5 p-5 animate-fade-up">
+              <div key={question.id} className="glass-card mb-5 p-5 animate-fade-up border" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--surface-color)' }}>
                 <div className="mb-4 d-flex align-items-start gap-4">
-                  <div className="stat-icon" style={{ width: '45px', height: '45px', flexShrink: 0, fontSize: '1.2rem', background: 'var(--accent-color)', color: '#000' }}>
+                  <div className="stat-icon fw-bold shadow-sm d-flex align-items-center justify-content-center rounded-circle" style={{ width: '45px', height: '45px', flexShrink: 0, fontSize: '1.2rem', background: 'var(--primary-color)', color: '#ffffff' }}>
                     {index + 1}
                   </div>
-                  <h4 className="fw-bold m-0 mt-2" style={{ color: 'var(--text-primary)', lineHeight: 1.4 }}>{question.question_text}</h4>
+                  <h4 className="fw-bold m-0 mt-2 flex-grow-1" style={{ color: 'var(--text-primary)', lineHeight: 1.4 }}>{question.question_text}</h4>
                 </div>
                 
                 <div className="options-container ps-md-5 pt-2">

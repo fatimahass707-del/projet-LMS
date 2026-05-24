@@ -28,9 +28,7 @@ router.post('/register', async (req, res) => {
 
     const { name, email, password, role } = value;
     
-    // Sécurité : On ne permet pas de s'inscrire en tant qu'admin via cette route 
-    // sauf si c'est explicitement autorisé (ex: premier utilisateur ou via dashboard admin)
-    // Pour l'instant, on force 'student' ou 'teacher'
+    // Verrouillage de sécurité en production : les visiteurs publics ne peuvent pas s'inscrire en tant qu'administrateur
     const finalRole = (role === 'admin') ? 'student' : role;
     
     const [existing] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
@@ -76,7 +74,7 @@ router.post('/login', async (req, res) => {
     
     const token = jwt.sign(
       { id: user.id, name: user.name, role: user.role },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'super_secret_jwt_key_for_lms_12345',
       { expiresIn: '24h' }
     );
     

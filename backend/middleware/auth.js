@@ -10,7 +10,7 @@ const verifyToken = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'super_secret_jwt_key_for_lms_12345');
     req.user = decoded; // { id, name, role }
     next();
   } catch (error) {

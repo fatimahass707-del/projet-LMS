@@ -138,7 +138,7 @@ router.delete('/:id', verifyToken, checkRole(['teacher', 'admin']), async (req, 
   }
 });
 
-// GET : Liste des étudiants d'un cours avec leur progression (enseignant)
+// GET : Liste des étudiants d'un cours avec leur progression et statut des examens (enseignant)
 router.get('/:id/students', verifyToken, checkRole(['teacher', 'admin']), async (req, res) => {
   try {
     const courseId = req.params.id;
@@ -152,6 +152,9 @@ router.get('/:id/students', verifyToken, checkRole(['teacher', 'admin']), async 
       return res.status(403).json({ message: 'Accès refusé' });
     }
 
+    // Tous les quiz de ce cours
+    const [courseQuizzes] = await db.query('SELECT id, title FROM quizzes WHERE course_id = ?', [courseId]);
+
     // Récupérer les étudiants, leur progression et leur score moyen aux quiz
     const [students] = await db.query(`
       SELECT 
@@ -164,11 +167,58 @@ router.get('/:id/students', verifyToken, checkRole(['teacher', 'admin']), async 
       WHERE e.course_id = ?
     `, [courseId, courseId, courseId, courseId]);
 
-    res.json(students.map(s => ({
-      ...s,
-      progress: s.total_resources > 0 ? Math.round((s.viewed_resources / s.total_resources) * 100) : 0,
-      avg_quiz_score: s.avg_quiz_score ? Math.round(s.avg_quiz_score) : null
-    })));
+    const result = [];
+    for (const s of students) {
+      // Récupérer les soumissions pour cet étudiant
+      const [subs] = await db.query(`
+        SELECT q.id as quiz_id, q.title as quiz_title, s.score, s.total, IF(s.total > 0, ROUND((s.score / s.total) * 100), 0) as percent
+        FROM submissions s
+        JOIN quizzes q ON s.quiz_id = q.id
+        WHERE s.student_id = ? AND q.course_id = ?
+      `, [s.id, courseId]);
+
+      const examDetails = courseQuizzes.map(cq => {
+        const sub = subs.find(item => item.quiz_id === cq.id);
+        if (sub) {
+          const passed = sub.percent >= 50; // Seuil de réussite à 50%
+          return {
+            id: cq.id,
+            title: cq.title,
+            passed: passed,
+            score: sub.score,
+            total: sub.total,
+            percent: Number(sub.percent),
+            status: passed ? 'réussi' : 'échoué'
+          };
+        } else {
+          return {
+            id: cq.id,
+            title: cq.title,
+            passed: false,
+            score: 0,
+            total: 0,
+            percent: 0,
+            status: 'non_passé'
+          };
+        }
+      });
+
+      const passedCount = examDetails.filter(e => e.status === 'réussi').length;
+      const failedCount = examDetails.filter(e => e.status === 'échoué').length;
+      const totalExams = courseQuizzes.length;
+
+      result.push({
+        ...s,
+        progress: s.total_resources > 0 ? Math.round((s.viewed_resources / s.total_resources) * 100) : 0,
+        avg_quiz_score: s.avg_quiz_score ? Math.round(s.avg_quiz_score) : null,
+        examDetails,
+        passedCount,
+        failedCount,
+        totalExams
+      });
+    }
+
+    res.json(result);
   } catch (error) {
     console.error('Erreur list students:', error);
     res.status(500).json({ message: 'Erreur serveur' });

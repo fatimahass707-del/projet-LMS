@@ -38,6 +38,32 @@
   border: 1px solid var(--glass-border);
 }
 
+.auth-logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.auth-logo-img {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.3));
+  animation: floatLogo 6s ease-in-out infinite;
+  transition: transform 0.3s ease;
+}
+
+.auth-logo-img:hover {
+  transform: scale(1.1) rotate(-3deg);
+}
+
+@keyframes floatLogo {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+
 .auth-logo {
   font-size: 3.5rem;
   margin-bottom: 1.5rem;
@@ -304,40 +330,41 @@
   margin-bottom: 1rem;
   cursor: pointer;
   background: var(--surface-color);
+  color: var(--text-primary);
   transition: all var(--transition-fast);
   font-weight: 500;
 }
 
 .quiz-option:hover {
-  border-color: rgba(202, 138, 4, 0.4);
-  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--primary-light);
+  background: var(--bg-color);
   transform: translateX(6px);
 }
 
 .quiz-option.selected {
-  border-color: var(--accent-color);
-  background: rgba(202, 138, 4, 0.05);
-  box-shadow: 0 4px 15px rgba(202, 138, 4, 0.1);
+  border-color: var(--primary-color);
+  background: rgba(79, 70, 229, 0.12);
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.15);
 }
 
 .quiz-option-letter {
-  width: 30px;
-  height: 30px;
+  width: 35px;
+  height: 35px;
   border-radius: 50%;
   background: var(--border-color);
   color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 1rem;
+  margin-right: 1.25rem;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 1rem;
   transition: all var(--transition-fast);
 }
 
 .quiz-option.selected .quiz-option-letter {
-  background: var(--accent-color);
-  color: #000;
+  background: var(--primary-color);
+  color: #FFFFFF;
 }
 
 /* ----------------------------------
@@ -446,11 +473,6 @@
   }
 }
 
-/* GLOBAL INPUT TEXT VISIBILITY FIX */
-input, textarea, select {
-  color: #ffffff !important;
-}
-
 /* Sidebar & Resource Enhancements */
 .sidebar-section {
   margin-bottom: 2rem;
@@ -491,10 +513,6 @@ input, textarea, select {
 
 .btn-view-resource:hover {
   opacity: 0.9;
-}
-
-input::placeholder, textarea::placeholder {
-  color: rgba(255, 255, 255, 0.4) !important;
 }
 
 

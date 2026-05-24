@@ -85,3 +85,6 @@ export const adminUnenrollStudent = (sId, cId) => apiCall(`${BASE_URL}/admin/enr
 // ---- PROGRESSION ----
 export const getProgress = (courseId) => apiCall(`${BASE_URL}/progress/${courseId}`, { headers: authHeaders() });
 export const updateProgress = (data) => apiCall(`${BASE_URL}/progress/update`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
+
+// ---- NOTIFICATIONS ----
+export const getNotifications = () => apiCall(`${BASE_URL}/notifications`, { headers: authHeaders() });

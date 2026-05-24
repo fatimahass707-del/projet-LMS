@@ -47,10 +47,10 @@ function Login() {
       <div className="form-card animate-fade-up">
         
         <div className="text-center mb-5">
-          <div className="auth-logo">
-            <ShieldCheck size={60} />
+          <div className="auth-logo-container">
+            <img src="/logo_lms.png" alt="LMS Logo" className="auth-logo-img" />
           </div>
-          <h2 className="auth-title">ProLMS</h2>
+          <h2 className="auth-title">LMS</h2>
           <p className="auth-subtitle">Plateforme d'apprentissage professionnelle</p>
         </div>
 
