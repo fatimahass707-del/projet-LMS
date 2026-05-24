@@ -66,6 +66,31 @@ router.get('/mine', verifyToken, checkRole(['teacher', 'admin']), async (req, re
   }
 });
 
+// GET : Rechercher des cours
+router.get('/search/query', async (req, res) => {
+  try {
+    const query = req.query.q || '';
+    if (!query || query.trim().length === 0) {
+      return res.json([]);
+    }
+
+    const searchTerm = `%${query}%`;
+    const sql = `
+      SELECT courses.id, courses.title, courses.description, courses.created_at, users.name AS teacher_name, users.id AS teacher_id
+      FROM courses 
+      JOIN users ON courses.teacher_id = users.id
+      WHERE courses.title LIKE ? OR courses.description LIKE ? OR users.name LIKE ?
+      ORDER BY courses.created_at DESC
+      LIMIT 20
+    `;
+    const [courses] = await db.query(sql, [searchTerm, searchTerm, searchTerm]);
+    res.json(courses);
+  } catch (error) {
+    console.error('Erreur Search Courses:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
 // GET : Voir un cours par ID
 router.get('/:id', async (req, res) => {
   try {
@@ -225,4 +250,4 @@ router.get('/:id/students', verifyToken, checkRole(['teacher', 'admin']), async 
   }
 });
 
-module.exports = router;
+module.exports = router;

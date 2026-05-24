@@ -10,6 +10,7 @@ export default function Layout({ children, userRole = 'student' }) {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const [collapsed, setCollapsed] = useState(localStorage.getItem('sidebar_collapsed') === 'true');
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Notifications state
   const [notifications, setNotifications] = useState([]);
@@ -43,6 +44,14 @@ export default function Layout({ children, userRole = 'student' }) {
     localStorage.removeItem('user');
     localStorage.removeItem('role');
     navigate('/login');
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
+      setSearchTerm('');
+    }
   };
 
   const getUserData = () => {
@@ -165,10 +174,18 @@ export default function Layout({ children, userRole = 'student' }) {
             </button>
 
             <div className="search-bar d-none d-sm-block">
-              <div style={{ position: 'relative' }}>
-                <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input type="text" placeholder="Rechercher..." className="input-modern" />
-              </div>
+              <form onSubmit={handleSearch} style={{ width: '100%' }}>
+                <div style={{ position: 'relative' }}>
+                  <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input 
+                    type="text" 
+                    placeholder="Rechercher..." 
+                    className="input-modern"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </form>
             </div>
           </div>
           

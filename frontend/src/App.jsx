@@ -15,6 +15,7 @@ import CourseView from './pages/CourseView';
 import QuizPage from './pages/QuizPage';
 import Results from './pages/Results';
 import Profile from './pages/Profile';
+import SearchResults from './pages/SearchResults';
 
 function App() {
   return (
@@ -28,6 +29,15 @@ function App() {
           <ProtectedRoute allowedRoles={['student', 'teacher', 'admin']}>
             <Layout userRole={localStorage.getItem('role') || 'student'}>
               <Profile />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        {/* Route Recherche (Tous) */}
+        <Route path="/search" element={
+          <ProtectedRoute allowedRoles={['student', 'teacher', 'admin']}>
+            <Layout userRole={localStorage.getItem('role') || 'student'}>
+              <SearchResults />
             </Layout>
           </ProtectedRoute>
         } />

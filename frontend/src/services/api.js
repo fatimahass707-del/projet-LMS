@@ -31,6 +31,7 @@ export const updatePassword = (data) => apiCall(`${BASE_URL}/profile/password`, 
 // ---- COURS ----
 export const getCourses = () => apiCall(`${BASE_URL}/courses`, { headers: authHeaders() });
 export const getMyCourses = () => apiCall(`${BASE_URL}/courses/mine`, { headers: authHeaders() });
+export const searchCourses = (query) => apiCall(`${BASE_URL}/courses/search/query?q=${encodeURIComponent(query)}`, { headers: authHeaders() });
 export const getCourseById = (id) => apiCall(`${BASE_URL}/courses/${id}`, { headers: authHeaders() });
 export const getCourseStudents = (id) => apiCall(`${BASE_URL}/courses/${id}/students`, { headers: authHeaders() });
 export const createCourse = (data) => apiCall(`${BASE_URL}/courses`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
